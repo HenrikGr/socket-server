@@ -10,6 +10,11 @@
     messages.scrollTop = messages.scrollHeight
   }
 
+  function clearMessages(message) {
+    messages.textContent = `${message}`
+    messages.scrollTop = messages.scrollHeight
+  }
+
   function handleResponse(response) {
     return response.ok
       ? response.json().then(data => JSON.stringify(data, null, 2))
@@ -19,7 +24,7 @@
   login.onclick = function() {
     fetch('/login', { method: 'POST', credentials: 'same-origin' })
       .then(handleResponse)
-      .then(showMessage)
+      .then(clearMessages)
       .catch(function(err) {
         showMessage(err.message)
       })
@@ -28,7 +33,7 @@
   logout.onclick = function() {
     fetch('/logout', { method: 'DELETE', credentials: 'same-origin' })
       .then(handleResponse)
-      .then(showMessage)
+      .then(clearMessages)
       .catch(function(err) {
         showMessage(err.message)
       })

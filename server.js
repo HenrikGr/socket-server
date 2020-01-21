@@ -44,7 +44,7 @@ app.post('/login', function(req, res) {
   const id = uuid.v4()
   req.session.userId = id
   console.log(`Logging in as user ${req.session.userId}`)
-  res.send({ result: 'OK', message: 'Session updated' })
+  res.send({ result: 'OK', message: `User ${req.session.userId} is logged in` })
 })
 
 /**
@@ -55,21 +55,21 @@ app.delete('/logout', function(req, res) {
   console.log('Logging out user : ', session.userId)
 
   if (!session.userId) {
-    res.send({ result: 'OK', message: 'User must login first' })
+    res.send({ result: 'OK', message: 'User is logged out' })
   } else {
     const { userId } = session
 
     console.log('Destroy the session and user socket if exist : ', userId)
     session.destroy(function() {
-      const socket = clientMgr.getSocket(userId)
-      if (socket) {
-        socket.close()
+      const webSocket = clientMgr.getWebSocket(userId)
+      if (webSocket) {
+        webSocket.close()
       } else {
         console.log('There was no socket stored to delete')
       }
     })
 
-    res.send({ result: 'OK', message: 'Session destroyed' })
+    res.send({ result: 'OK', message: 'User is logged out' })
   }
 })
 
@@ -96,10 +96,10 @@ server.on('upgrade', function(req, socket, head) {
     console.log('Session contained a valid user - emit a connection event')
 
     // User had a session, web socket server handles the upgrade and we emit a connection event
-    wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.handleUpgrade(req, socket, head, webSocket => {
       console.log('Emit a connection event for the user with associated web socket')
       // Emit a connection event for the user and associated web socket
-      wss.emit('connection', ws, req)
+      wss.emit('connection', webSocket, req)
     })
   })
 })
@@ -109,7 +109,7 @@ server.on('upgrade', function(req, socket, head) {
  * Emitted when the handshake is complete. request is the http GET request sent by the client.
  * Useful for parsing authority headers, cookie headers, and other information.
  */
-wss.on('connection', function(socket, req) {
+wss.on('connection', function(webSocket, req) {
   const userId = req.session.userId
   console.log('Connection request from user: ' + userId)
 
@@ -117,29 +117,34 @@ wss.on('connection', function(socket, req) {
    * Store socket for the user to be able to handle multiple users
    * Writes-over existing sockets in case the same user re-connect
    */
-  clientMgr.setSocket(userId, socket)
+  clientMgr.setWebSocket(userId, webSocket)
+
+  /**
+   * Start subscribing on data
+   */
   clientMgr.sendConnectionConfirmation(userId)
 
   /**
    * Handle incoming web socket messages
+   * TODO: Remove this when subscription is in place
    */
-  socket.on('message', function(message) {
+  webSocket.on('message', function(message) {
     /**
      * Parse incoming message for a specific user.
      */
-    clientMgr.sendMessageConfirmation(userId)
+    clientMgr.parseMessage(userId, message)
   })
 
   /**
    * Handle web socket close event
    */
-  socket.on('close', function(code, reason) {
+  webSocket.on('close', function(code, reason) {
     console.log('Socket closed :', code, reason)
-    clientMgr.deleteSocket(userId)
+    clientMgr.deleteWebSocket(userId)
   })
 
-  socket.on('error', function(error) {
-    console.log('Socket closed :', error)
+  webSocket.on('error', function(error) {
+    console.log('Socket error :', error)
   })
 })
 

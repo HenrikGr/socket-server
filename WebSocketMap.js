@@ -10,79 +10,79 @@
  * the public interface. You could also use ES2019 private fields, but those
  * are not yet widely available as of the time of my writing.
  */
-const map = Symbol("map");
+const map = Symbol('map')
 
 /**
- * SocketMap class to store user id(s) and associated sockets
+ * WebSocketMap class to store user id(s) and associated webSockets
  *
  * @public
  * @class
  */
-class SocketMap {
+class WebSocketMap {
   /**
-   * Create a socket map instance
+   * Create a webSocket map instance
    */
   constructor() {
     /**
-     * Map to hold userId and associated sockets
+     * Map to hold userId and associated webSockets
      *
      * @private
      * @type {Map<string, socket>}
      */
-    this[map] = new Map();
+    this[map] = new Map()
   }
 
   /**
-   * Get socket for a user from the map
+   * Get webSocket for a user from the map
    *
    * @public
    * @param {string} userId - id of the user
    * @returns {socket|undefined}
    */
-  getSocket(userId) {
-    console.log("getSocket: " + userId);
-    return this[map].get(userId);
+  getWebSocket(userId) {
+    console.log('getSocket: ' + userId)
+    return this[map].get(userId)
   }
 
   /**
-   * Check if socket exist in the map for the user
+   * Check if user has an associated webSocket
    *
    * @param {string} userId - id of the user
    * @returns {boolean}
    */
-  hasSocket(userId) {
-    console.log("hasSocket: " + userId);
-    return this[map].has(userId);
+  hasWebSocket(userId) {
+    console.log('hasSocket: ' + userId)
+    return this[map].has(userId)
   }
 
   /**
-   * Store a user's socket in the map
+   * Store a user's webSocket in the map
    *
    * @public
    * @param {string} userId - id of the user
-   * @param {socket} socket - the associated socket
+   * @param {socket} webSocket - the associated socket
    */
-  setSocket(userId, socket) {
-    console.log("setSocket: " + userId);
-    this[map].set(userId, socket);
+  setWebSocket(userId, webSocket) {
+    console.log('setSocket: ' + userId)
+    this[map].set(userId, webSocket)
   }
 
   /**
-   * Delete docket for a user from the map
+   * Delete the associated webSocket
    *
    * @public
    * @param {string} userId - id of the user
    */
-  deleteSocket(userId) {
-    console.log("deleteSocket: " + userId);
-    this[map].delete(userId);
+  deleteWebSocket(userId) {
+    console.log('deleteSocket: ' + userId)
+    this[map].delete(userId)
   }
 
   /**
-   * Clear the map containing userIds and associated sockets
+   * Clear the map containing userIds and associated webSockets
    */
   deleteAll() {
-    this[map].clear();
+    this[map].clear()
   }
 
   /**
@@ -102,9 +102,9 @@ class SocketMap {
    */
   *iterator() {
     for (let [key, value] of this[map]) {
-      yield { key: key, socket: value }
+      yield { key: key, webSocket: value }
     }
   }
 }
 
-module.exports = SocketMap;
+module.exports = WebSocketMap
