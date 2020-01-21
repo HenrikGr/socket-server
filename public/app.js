@@ -38,11 +38,12 @@
 
   wsButton.onclick = function() {
     if (ws) {
-      ws.onerror = ws.onopen = ws.onclose = null
-      ws.close()
+      showMessage('WebSocket connect already exist')
+      //ws.onerror = ws.onopen = ws.onclose = null
+      //ws.close()
+    } else {
+      ws = new WebSocket(`ws://${location.host}`)
     }
-
-    ws = new WebSocket(`ws://${location.host}`)
 
     ws.onerror = function(event) {
       console.log('event', event)
