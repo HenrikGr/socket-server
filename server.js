@@ -10,7 +10,7 @@ const session = require('express-session')
 const express = require('express')
 const uuid = require('uuid')
 const WebSocket = require('ws')
-const SocketMap = require('./SocketMap')
+const ClientManager = require('./ClientManager')
 const cfenv = require('cfenv')
 const appEnv = cfenv.getAppEnv()
 
@@ -33,17 +33,17 @@ const sessionParser = session({
 app.use(sessionParser)
 
 /**
- * Create a socket map instance to store user id's and their associated sockets
- * @type {SocketMap}
+ * Create a client manager
+ * @type {ClientManager}
  */
-const socketMap = new SocketMap()
+const clientMgr = new ClientManager()
 
 // Simulate login
 app.post('/login', function(req, res) {
   // "Log in" user and set userId to session.
   const id = uuid.v4()
   req.session.userId = id
-  console.log(`Updating session for user ${req.session.userId}`)
+  console.log(`Logging in as user ${req.session.userId}`)
   res.send({ result: 'OK', message: 'Session updated' })
 })
 
@@ -52,14 +52,16 @@ app.post('/login', function(req, res) {
  */
 app.delete('/logout', function(req, res) {
   const { session } = req
-  console.log('Destroy the session for user : ', session.userId)
+  console.log('Logging out user : ', session.userId)
 
   if (!session.userId) {
-    res.send({ result: 'OK', message: 'user must login first' })
+    res.send({ result: 'OK', message: 'User must login first' })
   } else {
-    console.log('Destroy the socket if exist : ', session)
-    const socket = socketMap.getSocket(session.userId)
+    const { userId } = session
+
+    console.log('Destroy the session and user socket if exist : ', userId)
     session.destroy(function() {
+      const socket = clientMgr.getSocket(userId)
       if (socket) {
         socket.close()
       } else {
@@ -75,11 +77,13 @@ app.delete('/logout', function(req, res) {
 const server = http.createServer(app)
 
 // Create web socket socket-server
-const wss = new WebSocket.Server({ clientTracking: false, noServer: true })
+const wss = new WebSocket.Server({ clientTracking: true, noServer: true })
 
 /**
- * Handle upgrade event for the http socket-server
- * If session parsed ok, emit a connection event and handle the rest there.
+ * Handle upgrade event for the http server
+ * If user session exist - let the web socket server handle the upgrade
+ * which is performed per user socket combination.
+ * @remarks Ensure the client app has logic to handle lost connection and being able to re-connect.
  */
 server.on('upgrade', function(req, socket, head) {
   sessionParser(req, {}, () => {
@@ -89,9 +93,12 @@ server.on('upgrade', function(req, socket, head) {
       return
     }
 
-    // Call web socket socket-server to handle the upgrade
-    wss.handleUpgrade(req, socket, head, function(ws) {
-      // Emit a connection event
+    console.log('Session contained a valid user - emit a connection event')
+
+    // User had a session, web socket server handles the upgrade and we emit a connection event
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      console.log('Emit a connection event for the user with associated web socket')
+      // Emit a connection event for the user and associated web socket
       wss.emit('connection', ws, req)
     })
   })
@@ -106,16 +113,21 @@ wss.on('connection', function(socket, req) {
   const userId = req.session.userId
   console.log('Connection request from user: ' + userId)
 
-  // Store the socket for the userId
-  socketMap.setSocket(userId, socket)
-
-  socketMap.sendConnectionConfirmation(userId)
+  /**
+   * Store socket for the user to be able to handle multiple users
+   * Writes-over existing sockets in case the same user re-connect
+   */
+  clientMgr.setSocket(userId, socket)
+  clientMgr.sendConnectionConfirmation(userId)
 
   /**
    * Handle incoming web socket messages
    */
   socket.on('message', function(message) {
-    socketMap.sendMessageConfirmation(userId)
+    /**
+     * Parse incoming message for a specific user.
+     */
+    clientMgr.sendMessageConfirmation(userId)
   })
 
   /**
@@ -123,7 +135,7 @@ wss.on('connection', function(socket, req) {
    */
   socket.on('close', function(code, reason) {
     console.log('Socket closed :', code, reason)
-    socketMap.deleteSocket(userId)
+    clientMgr.deleteSocket(userId)
   })
 
   socket.on('error', function(error) {

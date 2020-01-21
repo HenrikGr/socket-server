@@ -24,7 +24,7 @@ class SocketMap {
    */
   constructor() {
     /**
-     * Map to hold userId and their sockets
+     * Map to hold userId and associated sockets
      *
      * @private
      * @type {Map<any, any>}
@@ -33,58 +33,56 @@ class SocketMap {
   }
 
   /**
-   * Get socket for a user
+   * Get socket for a user from the map
    *
    * @public
    * @param userId
    * @returns {*}
    */
   getSocket(userId) {
-    console.log('getSocket: Socket retrieved for user: ' + userId)
+    console.log('getSocket: ' + userId)
     return this[map].get(userId)
   }
 
   /**
-   * Store a user's socket
+   * Check if socket exist in the map for the user
+   *
+   * @param userId
+   * @returns {boolean | Promise<boolean>}
+   */
+  hasSocket(userId) {
+    console.log('hasSocket: ' + userId)
+    return this[map].has(userId)
+  }
+
+  /**
+   * Store a user's socket in the map
    *
    * @public
    * @param userId
    * @param socket
    */
   setSocket(userId, socket) {
-    console.log('setSocket: Socket set for user: ' + userId)
+    console.log('setSocket: ' + userId)
     this[map].set(userId, socket)
   }
 
   /**
-   * Delete docket for a user
+   * Delete docket for a user from the map
    *
    * @public
    * @param userId
    */
   deleteSocket(userId) {
-    console.log('deleteSocket: Socket deleted for user: ' + userId)
+    console.log('deleteSocket: ' + userId)
     this[map].delete(userId)
   }
 
-  sendConnectionConfirmation(userId) {
-    console.log('sendConnectionConfirmation - user: ' + userId)
-    for (let item of this) {
-      const { key, socket } = item
-      if (socket.readyState === 1 && key === userId) {
-        socket.send(`Connection established for user ${key}.`)
-      }
-    }
-  }
-
-  sendMessageConfirmation(userId) {
-    console.log('sendMessageConfirmation - user: ' + userId)
-    for (let item of this) {
-      const { key, socket } = item
-      if (socket.readyState === 1 && key === userId) {
-        socket.send(`Message received from user ${key}`)
-      }
-    }
+  /**
+   * Clear the map containing userIds and associated sockets
+   */
+  deleteAll() {
+    this[map].clear()
   }
 
   /**
