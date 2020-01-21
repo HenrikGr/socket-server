@@ -10,7 +10,7 @@ const session = require('express-session')
 const express = require('express')
 const uuid = require('uuid')
 const WebSocket = require('ws')
-const socketMap = require('./SocketMap')
+const SocketMap = require('./SocketMap')
 const cfenv = require('cfenv')
 const appEnv = cfenv.getAppEnv()
 
@@ -31,6 +31,12 @@ const sessionParser = session({
  * Session parser
  */
 app.use(sessionParser)
+
+/**
+ * Create a socket map instance to store user id's and their associated sockets
+ * @type {SocketMap}
+ */
+const socketMap = new SocketMap()
 
 // Simulate login
 app.post('/login', function(req, res) {

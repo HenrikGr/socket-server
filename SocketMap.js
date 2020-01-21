@@ -106,4 +106,4 @@ class SocketMap {
   }
 }
 
-module.exports = new SocketMap()
+module.exports = SocketMap
