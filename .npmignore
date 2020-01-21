@@ -1,0 +1,12 @@
+.npmrc
+.npmignore
+.gitignore
+.coveralls.yml
+.travis.yml
+.github/
+node_modules/
+coverage/
+dist/
+/server/
+/oauth-server.js
+/test/
